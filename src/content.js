@@ -305,9 +305,11 @@
 
     shadow.querySelector(".confirm").addEventListener("click", async () => {
       const credentials = state.pendingCredentials;
+      state.pendingCredentials = null;
+      state.savePromptVisible = false;
+      host.remove();
+
       if (!credentials) {
-        host.remove();
-        state.savePromptVisible = false;
         return;
       }
 
@@ -324,20 +326,43 @@
           password: credentials.password,
           autoFillCredentials: true
         };
-        shadow.querySelector(".title").textContent = "已保存";
-        shadow.querySelector(".body").textContent = "下次进入当前站点时会自动填充用户名和密码。";
-        shadow.querySelector(".actions").remove();
-        state.pendingCredentials = null;
-        window.setTimeout(() => {
-          state.savePromptVisible = false;
-          host.remove();
-        }, 1600);
+        showToast("已保存到 Smart Login Helper，下次进入当前站点时会自动填充。", "success");
       } catch (error) {
-        shadow.querySelector(".body").textContent = `保存失败：${error.message || error}`;
+        showToast(`保存失败：${error.message || error}`, "error");
       }
     });
 
     document.documentElement.appendChild(host);
+  }
+
+  function showToast(message, type) {
+    const oldToast = document.getElementById("ip-login-helper-toast");
+    if (oldToast) {
+      oldToast.remove();
+    }
+
+    const toast = document.createElement("div");
+    toast.id = "ip-login-helper-toast";
+    toast.style.cssText = [
+      "position:fixed",
+      "top:18px",
+      "right:18px",
+      "z-index:2147483647",
+      "max-width:360px",
+      "background:#fff",
+      `border:1px solid ${type === "error" ? "#fda29b" : "#abefc6"}`,
+      "border-radius:8px",
+      "box-shadow:0 10px 30px rgba(16,24,40,.16)",
+      `color:${type === "error" ? "#b42318" : "#067647"}`,
+      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      "font-size:13px",
+      "font-weight:650",
+      "line-height:1.45",
+      "padding:12px 14px"
+    ].join(";");
+    toast.textContent = message;
+    document.documentElement.appendChild(toast);
+    window.setTimeout(() => toast.remove(), type === "error" ? 5000 : 2200);
   }
 
   async function fillCaptcha() {
