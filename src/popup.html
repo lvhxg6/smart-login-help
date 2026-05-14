@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SL Helper</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header class="app-header">
+        <div>
+          <h1>Smart Login Helper</h1>
+          <p>SL Helper</p>
+        </div>
+        <span class="badge">Local</span>
+      </header>
+
+      <section class="hero-panel">
+        <div>
+          <p class="eyebrow">当前站点</p>
+          <h2 id="siteKey">读取当前站点...</h2>
+          <p id="currentState" class="subtle">正在检查本机缓存</p>
+        </div>
+        <div class="status-grid">
+          <span id="credentialState">账号 -</span>
+          <span id="captchaState">验证码 -</span>
+        </div>
+      </section>
+
+      <details class="panel">
+        <summary>
+          <span>已管理站点</span>
+          <small id="siteCount">0</small>
+        </summary>
+        <div id="siteList" class="site-list details-body"></div>
+      </details>
+
+      <details class="panel">
+        <summary>
+          <span>模型配置</span>
+          <small>验证码识别</small>
+        </summary>
+        <div class="details-body">
+          <label>
+            Base URL
+            <input id="endpoint" placeholder="http://192.168.183.21:9000/v1">
+          </label>
+          <label>
+            API Key
+            <input id="apiKey" type="password" autocomplete="off">
+          </label>
+          <label>
+            Model ID
+            <input id="modelId" placeholder="Qwen3-VL-8B-Instruct">
+          </label>
+          <label>
+            接口类型
+            <select id="provider">
+              <option value="openai-compatible">OpenAI Compatible</option>
+            </select>
+          </label>
+          <p class="hint">填写到 `/v1` 即可，插件会自动调用 `/chat/completions`。</p>
+          <button id="saveModel" class="primary wide" type="button">保存模型配置</button>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>
+          <span>选择器覆盖</span>
+          <small>高级</small>
+        </summary>
+        <div class="details-body">
+          <label>
+            用户名输入框
+            <input id="selectorUsername" placeholder="例如 input[name='username']">
+          </label>
+          <label>
+            密码输入框
+            <input id="selectorPassword" placeholder="例如 input[type='password']">
+          </label>
+          <label>
+            验证码输入框
+            <input id="selectorCaptchaInput" placeholder="例如 input[name='imgCode']">
+          </label>
+          <label>
+            验证码图片
+            <input id="selectorCaptchaImage" placeholder="例如 #captchaImg">
+          </label>
+          <p class="hint">选择器只作用于当前站点。一般不需要配置。</p>
+          <button id="saveSelectors" class="secondary wide" type="button">保存选择器</button>
+        </div>
+      </details>
+
+      <p id="status" role="status"></p>
+    </main>
+    <script src="storage.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

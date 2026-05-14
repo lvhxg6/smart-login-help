@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Login Helper",
+  "short_name": "SL Helper",
+  "version": "0.1.0",
+  "description": "Store local per-site login credentials and autofill username, password, and image text captcha fields.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "SL Helper",
+    "default_popup": "src/popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
