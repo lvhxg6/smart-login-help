@@ -57,6 +57,10 @@ async function handleMessage(message, sender) {
     return getSecurityStatus();
   }
 
+  if (message.type === "REVEAL_SITE_CREDENTIALS") {
+    return revealSiteCredentials(message.siteKey, message.masterPassword || "");
+  }
+
   if (message.type === "TEST_MODEL") {
     return recognizeCaptcha(message.dataUrl, message.model);
   }

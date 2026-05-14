@@ -158,11 +158,26 @@ async function renderSiteList() {
     const actions = document.createElement("div");
     actions.className = "site-actions";
 
-    const use = document.createElement("button");
-    use.className = "ghost";
-    use.type = "button";
-    use.textContent = siteKey === currentSiteKey ? "当前站点" : "查看";
-    use.disabled = siteKey === currentSiteKey;
+    const reveal = document.createElement("button");
+    reveal.className = "ghost";
+    reveal.type = "button";
+    reveal.textContent = "查看密码";
+    reveal.addEventListener("click", async () => {
+      const masterPassword = window.prompt("请输入主密码以查看该站点缓存的账号密码：");
+      if (masterPassword === null) {
+        return;
+      }
+      try {
+        const credentials = await sendRuntimeMessage({
+          type: "REVEAL_SITE_CREDENTIALS",
+          siteKey,
+          masterPassword
+        });
+        window.alert(`站点：${siteKey}\n用户名：${credentials.username}\n密码：${credentials.password}`);
+      } catch (error) {
+        setStatus(error.message || String(error), true);
+      }
+    });
 
     const remove = document.createElement("button");
     remove.className = "danger";
@@ -175,7 +190,7 @@ async function renderSiteList() {
       setStatus("已删除站点缓存。");
     });
 
-    actions.append(use, remove);
+    actions.append(reveal, remove);
     item.append(host, user, flags, actions);
     elements.siteList.appendChild(item);
   }

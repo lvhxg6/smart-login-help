@@ -223,6 +223,45 @@ async function migratePlaintextCredentials(masterPassword) {
   await storageSet({ [STORAGE_KEYS.sites]: sites });
 }
 
+async function revealSiteCredentials(siteKey, masterPassword) {
+  const result = await storageGet([STORAGE_KEYS.sites, STORAGE_KEYS.security]);
+  const sites = result[STORAGE_KEYS.sites] || {};
+  const site = sites[siteKey] || {};
+
+  if (site.username && site.password) {
+    return {
+      username: site.username,
+      password: site.password,
+      encrypted: false
+    };
+  }
+
+  if (!site.credentials || !site.credentials.encrypted) {
+    throw new Error("当前站点没有保存账号密码。");
+  }
+
+  const security = result[STORAGE_KEYS.security];
+  if (!security) {
+    throw new Error("缺少加密配置，无法解密。");
+  }
+  if (!masterPassword) {
+    throw new Error("查看密码需要输入主密码。");
+  }
+
+  const rawKey = await deriveRawKey(masterPassword, security.salt);
+  const key = await importAesKey(rawKey);
+  const verifier = await decryptWithKey(key, security.verifier);
+  if (verifier !== SECURITY_VERIFIER) {
+    throw new Error("主密码不正确。");
+  }
+
+  const text = await decryptWithKey(key, site.credentials);
+  return {
+    ...JSON.parse(text),
+    encrypted: true
+  };
+}
+
 async function getOrCreateSessionKey(masterPassword) {
   const session = await sessionGet(STORAGE_KEYS.sessionKey);
   if (session[STORAGE_KEYS.sessionKey]) {
