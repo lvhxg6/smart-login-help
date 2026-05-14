@@ -28,6 +28,21 @@
         </div>
       </section>
 
+      <details id="securityPanel" class="panel">
+        <summary>
+          <span>安全解锁</span>
+          <small id="securityState">未启用</small>
+        </summary>
+        <div class="details-body">
+          <label>
+            主密码
+            <input id="masterPassword" type="password" autocomplete="off" placeholder="输入主密码以解锁加密缓存">
+          </label>
+          <p class="hint">主密码不会保存；只用于解密本机缓存。浏览器重启后需要重新解锁。</p>
+          <button id="unlockSecurity" class="primary wide" type="button">解锁</button>
+        </div>
+      </details>
+
       <details class="panel">
         <summary>
           <span>已管理站点</span>

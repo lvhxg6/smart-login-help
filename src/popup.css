@@ -259,3 +259,7 @@ button {
   min-height: 18px;
   padding: 0 2px;
 }
+
+#status.error {
+  color: #b42318;
+}

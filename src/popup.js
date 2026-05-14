@@ -3,6 +3,10 @@ const elements = {
   currentState: document.getElementById("currentState"),
   credentialState: document.getElementById("credentialState"),
   captchaState: document.getElementById("captchaState"),
+  securityPanel: document.getElementById("securityPanel"),
+  securityState: document.getElementById("securityState"),
+  masterPassword: document.getElementById("masterPassword"),
+  unlockSecurity: document.getElementById("unlockSecurity"),
   siteCount: document.getElementById("siteCount"),
   endpoint: document.getElementById("endpoint"),
   apiKey: document.getElementById("apiKey"),
@@ -19,15 +23,19 @@ const elements = {
 };
 
 let currentSiteKey = "";
+let securityStatus = { enabled: false, unlocked: false };
+let currentTab = null;
 
 init();
 
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  currentTab = tab;
   currentSiteKey = siteKeyFromUrl(tab.url);
   elements.siteKey.textContent = currentSiteKey;
 
   await loadCurrentSite();
+  await loadSecurityStatus();
   await loadModel();
   await renderSiteList();
 }
@@ -41,6 +49,24 @@ elements.saveModel.addEventListener("click", async () => {
   });
   setStatus("模型配置已保存。");
   await loadCurrentSite();
+});
+
+elements.unlockSecurity.addEventListener("click", async () => {
+  try {
+    const type = securityStatus.enabled ? "UNLOCK_SECURITY" : "MIGRATE_CREDENTIALS";
+    await sendRuntimeMessage({
+      type,
+      masterPassword: elements.masterPassword.value
+    });
+    elements.masterPassword.value = "";
+    setStatus(securityStatus.enabled ? "加密缓存已解锁。" : "已启用加密并迁移现有缓存。");
+    await loadSecurityStatus();
+    await loadCurrentSite();
+    await renderSiteList();
+    chrome.tabs.sendMessage(currentTab.id, { type: "RUN_AUTOFILL" }).catch(() => {});
+  } catch (error) {
+    setStatus(error.message || String(error), true);
+  }
 });
 
 elements.saveSelectors.addEventListener("click", async () => {
@@ -58,19 +84,31 @@ elements.saveSelectors.addEventListener("click", async () => {
 async function loadCurrentSite() {
   const siteConfig = await getSiteConfig(currentSiteKey);
   const model = await getModelConfig();
-  const hasCredentials = Boolean(siteConfig.username && siteConfig.password);
+  const hasCredentials = Boolean(siteConfig.hasCredentials || (siteConfig.username && siteConfig.password));
   const hasModel = Boolean(model.endpoint && model.apiKey && model.modelId);
 
-  elements.currentState.textContent = hasCredentials
+  elements.currentState.textContent = siteConfig.credentialsLocked
+    ? "账号已加密保存。输入主密码解锁后可自动填充。"
+    : hasCredentials
     ? `已保存账号：${siteConfig.username}`
     : "未保存账号。首次登录成功后会询问是否保存。";
-  elements.credentialState.textContent = hasCredentials ? "账号 已缓存" : "账号 未缓存";
+  elements.credentialState.textContent = siteConfig.credentialsLocked ? "账号 已加密" : hasCredentials ? "账号 已缓存" : "账号 未缓存";
   elements.captchaState.textContent = hasModel ? "验证码 已配置" : "验证码 未配置";
 
   elements.selectorUsername.value = siteConfig.selectors.username || "";
   elements.selectorPassword.value = siteConfig.selectors.password || "";
   elements.selectorCaptchaInput.value = siteConfig.selectors.captchaInput || "";
   elements.selectorCaptchaImage.value = siteConfig.selectors.captchaImage || "";
+}
+
+async function loadSecurityStatus() {
+  const status = await sendRuntimeMessage({ type: "GET_SECURITY_STATUS" });
+  securityStatus = status;
+  elements.securityState.textContent = status.enabled
+    ? status.unlocked ? "已解锁" : "已加密"
+    : "未启用";
+  elements.unlockSecurity.textContent = status.enabled ? "解锁" : "启用加密";
+  elements.securityPanel.open = status.enabled && !status.unlocked;
 }
 
 async function loadModel() {
@@ -106,7 +144,9 @@ async function renderSiteList() {
 
     const user = document.createElement("div");
     user.className = "site-user";
-    user.textContent = site.username ? `账号：${site.username}` : "账号：未设置";
+    user.textContent = site.credentials && site.credentials.encrypted
+      ? "账号：已加密"
+      : site.username ? `账号：${site.username}` : "账号：未设置";
 
     const flags = document.createElement("div");
     flags.className = "site-flags";
@@ -147,11 +187,30 @@ function flag(enabled, text) {
   return span;
 }
 
-function setStatus(text) {
+function sendRuntimeMessage(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      const runtimeError = chrome.runtime.lastError;
+      if (runtimeError) {
+        reject(new Error(runtimeError.message));
+        return;
+      }
+      if (!response || !response.ok) {
+        reject(new Error((response && response.error) || "插件后台没有返回结果。"));
+        return;
+      }
+      resolve(response.result);
+    });
+  });
+}
+
+function setStatus(text, isError = false) {
   elements.status.textContent = text;
+  elements.status.className = isError ? "error" : "";
   window.setTimeout(() => {
     if (elements.status.textContent === text) {
       elements.status.textContent = "";
+      elements.status.className = "";
     }
   }, 3000);
 }

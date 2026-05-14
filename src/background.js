@@ -34,12 +34,27 @@ async function handleMessage(message, sender) {
 
   if (message.type === "SAVE_SITE_CREDENTIALS") {
     const siteKey = message.siteKey || siteKeyFromUrl(sender.tab.url);
-    await saveSiteConfig(siteKey, {
-      username: message.username || "",
-      password: message.password || "",
-      autoFillCredentials: true
-    });
+    await saveEncryptedSiteCredentials(
+      siteKey,
+      message.username || "",
+      message.password || "",
+      message.masterPassword || ""
+    );
     return { siteKey };
+  }
+
+  if (message.type === "GET_SECURITY_STATUS") {
+    return getSecurityStatus();
+  }
+
+  if (message.type === "UNLOCK_SECURITY") {
+    await unlockSecurity(message.masterPassword || "");
+    return getSecurityStatus();
+  }
+
+  if (message.type === "MIGRATE_CREDENTIALS") {
+    await migratePlaintextCredentials(message.masterPassword || "");
+    return getSecurityStatus();
   }
 
   if (message.type === "TEST_MODEL") {

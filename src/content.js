@@ -225,7 +225,7 @@
   }
 
   function hasStoredCredentials() {
-    return Boolean(state.config && state.config.username && state.config.password);
+    return Boolean(state.config && (state.config.hasCredentials || (state.config.username && state.config.password)));
   }
 
   function showSavePrompt() {
@@ -264,6 +264,22 @@
           line-height: 1.45;
           margin: 0 0 12px;
         }
+        label {
+          color: #344054;
+          display: block;
+          font-size: 12px;
+          margin: 0 0 12px;
+        }
+        input {
+          border: 1px solid #cfd4dc;
+          border-radius: 6px;
+          box-sizing: border-box;
+          font-size: 13px;
+          margin-top: 5px;
+          min-height: 30px;
+          padding: 6px 8px;
+          width: 100%;
+        }
         .actions {
           display: flex;
           gap: 8px;
@@ -290,6 +306,10 @@
       <div class="card">
         <p class="title">保存到 Smart Login Helper？</p>
         <p class="body">检测到本次登录已完成，是否把当前站点的用户名和密码保存到本机缓存，方便下次自动填充？</p>
+        <label>
+          主密码
+          <input class="master-password" type="password" autocomplete="off" placeholder="用于加密本机缓存，不会保存主密码">
+        </label>
         <div class="actions">
           <button class="cancel" type="button">暂不保存</button>
           <button class="confirm" type="button">确定保存</button>
@@ -305,6 +325,7 @@
 
     shadow.querySelector(".confirm").addEventListener("click", async () => {
       const credentials = state.pendingCredentials;
+      const masterPassword = shadow.querySelector(".master-password").value;
       state.pendingCredentials = null;
       state.savePromptVisible = false;
       host.remove();
@@ -318,12 +339,15 @@
           type: "SAVE_SITE_CREDENTIALS",
           siteKey: state.siteKey,
           username: credentials.username,
-          password: credentials.password
+          password: credentials.password,
+          masterPassword
         });
         state.config = {
           ...state.config,
           username: credentials.username,
           password: credentials.password,
+          hasCredentials: true,
+          credentialsEncrypted: true,
           autoFillCredentials: true
         };
         showToast("已保存到 Smart Login Helper，下次进入当前站点时会自动填充。", "success");
